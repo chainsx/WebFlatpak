@@ -1,0 +1,13 @@
+services:
+  webflatpak:
+    build:
+      context: .
+    environment:
+      WEBFLATPAK_UPSTREAM: ${WEBFLATPAK_UPSTREAM:?Set WEBFLATPAK_UPSTREAM in .env}
+      WEBFLATPAK_STREAM_UPSTREAM: ${WEBFLATPAK_STREAM_UPSTREAM:-}
+    ports:
+      - "9090:8080"
+      - "6080:6080"
+      - "7681:7681"
+      - "7690-7789:7690-7789"
+    restart: unless-stopped
