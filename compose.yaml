@@ -3,11 +3,14 @@ services:
     build:
       context: .
     environment:
-      WEBFLATPAK_UPSTREAM: ${WEBFLATPAK_UPSTREAM:?Set WEBFLATPAK_UPSTREAM in .env}
-      WEBFLATPAK_STREAM_UPSTREAM: ${WEBFLATPAK_STREAM_UPSTREAM:-}
+      WEBFLATPAK_USERNAME: ${WEBFLATPAK_USERNAME:-admin}
+      WEBFLATPAK_PASSWORD: ${WEBFLATPAK_PASSWORD:?Set WEBFLATPAK_PASSWORD in .env}
     ports:
-      - "9090:8080"
-      - "6080:6080"
-      - "7681:7681"
-      - "7690-7789:7690-7789"
+      - "8080:8080"
+    privileged: true
+    volumes:
+      - webflatpak-data:/var/lib/webflatpak
     restart: unless-stopped
+
+volumes:
+  webflatpak-data:

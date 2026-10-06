@@ -1,15 +1,45 @@
-FROM nginx:alpine
+FROM alpine:3.22
 
-COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+RUN apk add --no-cache \
+        apache2-utils \
+        dbus \
+        dbus-x11 \
+        flatpak \
+        font-dejavu \
+        mesa-dri-gallium \
+        nginx \
+        novnc \
+        openbox \
+        py3-flask \
+        py3-gunicorn \
+        su-exec \
+        tini \
+        websockify \
+        x11vnc \
+        xvfb \
+    && addgroup -S webflatpak \
+    && adduser -S -D -h /var/lib/webflatpak -G webflatpak webflatpak \
+    && mkdir -p /app/public /run/user/1000 /var/lib/webflatpak \
+    && chown -R webflatpak:webflatpak /run/user/1000 /var/lib/webflatpak
+
+COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/entrypoint.sh /usr/local/bin/webflatpak-entrypoint
-COPY public/ /usr/share/nginx/html/
+COPY docker/runtime.sh /usr/local/bin/webflatpak-runtime
+COPY app/server.py /app/server.py
+COPY public/ /app/public/
 
-RUN chmod 0555 /usr/local/bin/webflatpak-entrypoint \
-    && find /usr/share/nginx/html -type f -exec chmod 0444 {} \;
+RUN chmod 0555 /usr/local/bin/webflatpak-entrypoint /usr/local/bin/webflatpak-runtime \
+    && find /app/public -type f -exec chmod 0444 {} \;
 
-ENV WEBFLATPAK_UPSTREAM=""
+ENV WEBFLATPAK_USERNAME=admin
+ENV WEBFLATPAK_HOME=/var/lib/webflatpak
 
-EXPOSE 8080 6080 7681 7690-7789
+EXPOSE 8080
 
-ENTRYPOINT ["/usr/local/bin/webflatpak-entrypoint"]
+VOLUME ["/var/lib/webflatpak"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD wget -q --spider http://127.0.0.1:8080/healthz || exit 1
+
+ENTRYPOINT ["/sbin/tini", "--", "/usr/local/bin/webflatpak-entrypoint"]
 CMD ["nginx", "-g", "daemon off;"]
